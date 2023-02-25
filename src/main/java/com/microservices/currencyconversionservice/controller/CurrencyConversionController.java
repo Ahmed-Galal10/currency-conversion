@@ -1,6 +1,7 @@
 package com.microservices.currencyconversionservice.controller;
 
 import com.microservices.currencyconversionservice.model.CurrencyConversion;
+import com.microservices.currencyconversionservice.proxy.CurrencyExchangeProxy;
 import com.microservices.currencyconversionservice.service.CurrencyConversionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,8 @@ public class CurrencyConversionController {
 
     @Autowired
     private CurrencyConversionService currencyConversionService;
+    @Autowired
+    private CurrencyExchangeProxy currencyExchangeProxy;
 
 
     @GetMapping("/hard-coded/from/{givenCurrency}/to/{targetCurrency}/quantity/{quantity}")
@@ -43,6 +46,17 @@ public class CurrencyConversionController {
                 CurrencyConversion.class, uriVariables);
 
         CurrencyConversion currencyConversion = currencyConversionResponse.getBody();
+        this.currencyConversionService.prepareCurrencyConversionResponse(currencyConversion, quantity);
+
+        return currencyConversion;
+    }
+
+    @GetMapping("/by-feign/from/{givenCurrency}/to/{targetCurrency}/quantity/{quantity}")
+    public CurrencyConversion calculateCurrencyConversionByFeign(@PathVariable String givenCurrency,
+                                                                 @PathVariable String targetCurrency,
+                                                                 @PathVariable BigDecimal quantity) {
+
+        CurrencyConversion currencyConversion = this.currencyExchangeProxy.getExchangeValue(givenCurrency, targetCurrency);
         this.currencyConversionService.prepareCurrencyConversionResponse(currencyConversion, quantity);
 
         return currencyConversion;
