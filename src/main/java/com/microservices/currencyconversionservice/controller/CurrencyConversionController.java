@@ -1,6 +1,8 @@
 package com.microservices.currencyconversionservice.controller;
 
 import com.microservices.currencyconversionservice.model.CurrencyConversion;
+import com.microservices.currencyconversionservice.service.CurrencyConversionService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +16,13 @@ import java.util.HashMap;
 @RestController
 @RequestMapping("/currency-conversion")
 public class CurrencyConversionController {
+
+    private static final String CURRENCY_EXCHANGE_SERVICE_SRL = "http://localhost:8000/currency-exchange/from/{givenCurrency}/to/{targetCurrency}";
+
+
+    @Autowired
+    private CurrencyConversionService currencyConversionService;
+
 
     @GetMapping("/hard-coded/from/{givenCurrency}/to/{targetCurrency}/quantity/{quantity}")
     public CurrencyConversion calculateCurrencyConversion(@PathVariable String givenCurrency,
@@ -30,12 +39,14 @@ public class CurrencyConversionController {
         uriVariables.put("givenCurrency", givenCurrency);
         uriVariables.put("targetCurrency", targetCurrency);
 
-        ResponseEntity<CurrencyConversion> currencyConversionResponse = new RestTemplate().getForEntity("http://localhost:8000/currency-exchange/from/{givenCurrency}/to/{targetCurrency}",
+        ResponseEntity<CurrencyConversion> currencyConversionResponse = new RestTemplate().getForEntity(CURRENCY_EXCHANGE_SERVICE_SRL,
                 CurrencyConversion.class, uriVariables);
 
         CurrencyConversion currencyConversion = currencyConversionResponse.getBody();
-        return new CurrencyConversion(currencyConversion.getId(), currencyConversion.getGivenCurrency(),
-                currencyConversion.getTargetCurrency(), currencyConversion.getConversionMultiple(),
-                quantity, quantity.multiply(currencyConversion.getConversionMultiple()));
+        this.currencyConversionService.prepareCurrencyConversionResponse(currencyConversion, quantity);
+
+        return currencyConversion;
     }
+
+
 }
